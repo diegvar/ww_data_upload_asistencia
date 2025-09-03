@@ -172,7 +172,8 @@ def sync_to_bigquery(
             "method": "report",
             "token": TOKEN
         }
-
+        print("TOKEN")
+        print(TOKEN)
         # Llamar a la API local
         print(f"Llamando a API local: {API_LOCAL_URL}")
         print(f"Headers: {headers}")
@@ -308,4 +309,5 @@ if __name__ == "__main__":
     # Para Cloud Run, usar puerto 8080
     port = int(os.getenv("PORT", 8080))
     uvicorn.run(app, host="0.0.0.0", port=port)
+
 
