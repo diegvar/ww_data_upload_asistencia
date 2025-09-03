@@ -181,7 +181,17 @@ def sync_to_bigquery(
         # Llamar a la API local
         print(f"Llamando a API local: {API_LOCAL_URL}")
         print(f"Headers: {headers}")
-        response = requests.get(API_LOCAL_URL, headers=headers)
+        try:
+            print("🔄 Iniciando llamada a ControlRoll...")
+            response = requests.get(API_LOCAL_URL, headers=headers, timeout=3600)
+            print("✅ Llamada completada")
+            # ... resto del código
+        except Exception as e:
+            print(f"❌ ERROR CRÍTICO: {type(e).__name__}: {e}")
+            print(f"❌ Detalles del error: {str(e)}")
+            import traceback
+            print(f"❌ Stack trace: {traceback.format_exc()}")
+            raise HTTPException(status_code=500, detail=f"Error crítico: {e}")
         print(f"Status code: {response.status_code}")
         response.raise_for_status()
         
@@ -313,6 +323,7 @@ if __name__ == "__main__":
     # Para Cloud Run, usar puerto 8080
     port = int(os.getenv("PORT", 8080))
     uvicorn.run(app, host="0.0.0.0", port=port)
+
 
 
 
