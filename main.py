@@ -162,10 +162,10 @@ def sync_to_bigquery(
     fecha_inicio: Optional[str] = None,
     fecha_fin: Optional[str] = None
 ):
-    """
-    Consume la API local y reemplaza los datos en BigQuery
-    """
     try:
+        print("=== INICIANDO SINCRONIZACIÓN ===")
+        print(f"Parámetros: empresa={empresa}, fecha_inicio={fecha_inicio}, fecha_fin={fecha_fin}")
+        
         # Preparar parámetros para la API local
         params = {}
         headers = {
@@ -175,15 +175,22 @@ def sync_to_bigquery(
 
         # Llamar a la API local
         print(f"Llamando a API local: {API_LOCAL_URL}")
+        print(f"Headers: {headers}")
         response = requests.get(API_LOCAL_URL, headers=headers)
+        print(f"Status code: {response.status_code}")
         response.raise_for_status()
         
         # Obtener datos como texto y convertirlos a JSON
         data_text = response.text
+        print(f"Longitud de respuesta: {len(data_text)}")
+        print(f"Primeros 200 caracteres: {data_text[:200]}")
+        
         data_json = json.loads(data_text)
         print(f"Datos obtenidos: {len(data_json)} registros")
+        print(f"Primer registro: {data_json[0] if data_json else 'No hay datos'}")
 
         if not data_json:
+            print("No hay datos para procesar")
             return JSONResponse(content={
                 "status": "success",
                 "message": "No hay datos para cargar",
@@ -193,26 +200,33 @@ def sync_to_bigquery(
         # Procesar y formatear datos
         print("Procesando y formateando datos...")
         processed_data = process_and_format_data(data_json)
+        print(f"Datos procesados: {len(processed_data)} registros")
         
         # Crear tabla si no existe
+        print("Verificando/creando tabla...")
         if not create_table_if_not_exists():
+            print("ERROR: No se pudo crear/verificar la tabla")
             raise HTTPException(
                 status_code=500,
                 detail="Error al crear/verificar la tabla"
             )
 
         # Agregar timestamp de carga
+        print("Agregando timestamps...")
         for row in processed_data:
             row['fecha_carga'] = datetime.now().isoformat()
             row['origen_datos'] = 'ControlRoll'
 
         # Reemplazar datos en BigQuery
+        print("Reemplazando datos en BigQuery...")
         if not replace_table_data(processed_data):
+            print("ERROR: No se pudo reemplazar datos en BigQuery")
             raise HTTPException(
                 status_code=500,
                 detail="Error al reemplazar datos en BigQuery"
             )
 
+        print("=== SINCRONIZACIÓN COMPLETADA EXITOSAMENTE ===")
         return JSONResponse(content={
             "status": "success",
             "message": "Datos procesados y reemplazados exitosamente en BigQuery",
@@ -223,21 +237,27 @@ def sync_to_bigquery(
         })
 
     except requests.RequestException as e:
+        print(f"ERROR de requests: {str(e)}")
         raise HTTPException(
             status_code=502, 
             detail=f"Error al conectar con la API local: {str(e)}"
         )
     except json.JSONDecodeError as e:
+        print(f"ERROR de JSON: {str(e)}")
+        print(f"Respuesta que causó el error: {data_text[:500]}")
         raise HTTPException(
             status_code=500,
             detail=f"Error al parsear JSON de la respuesta: {str(e)}"
         )
     except Exception as e:
+        print(f"ERROR INESPERADO: {str(e)}")
+        print(f"Tipo de error: {type(e)}")
+        import traceback
+        print(f"Traceback completo: {traceback.format_exc()}")
         raise HTTPException(
             status_code=500, 
             detail=f"Error inesperado: {str(e)}"
         )
-
 @app.get("/data-status")
 def get_data_status():
     """
@@ -288,3 +308,4 @@ if __name__ == "__main__":
     # Para Cloud Run, usar puerto 8080
     port = int(os.getenv("PORT", 8080))
     uvicorn.run(app, host="0.0.0.0", port=port)
+
