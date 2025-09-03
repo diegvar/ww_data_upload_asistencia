@@ -11,10 +11,10 @@ import os
 app = FastAPI()
 
 # Configuración
-API_LOCAL_URL = "https://cl.controlroll.com/ww01/ServiceUrl.aspx"
-PROJECT_ID = "pruebas-463316"
-DATASET_ID = "ww_data_upload_asistencia"
-TABLE_ID = "Asistencias_ControlRoll"
+API_LOCAL_URL = os.getenv("API_LOCAL_URL")
+PROJECT_ID =  os.getenv("PROJECT_ID")
+DATASET_ID =  os.getenv("DATASET_ID")
+TABLE_ID =  os.getenv("TABLE_ID")
 TOKEN = os.getenv("TOKEN_CR")
 
 # Lista de turnos a excluir (ajusta según tus necesidades)
@@ -172,8 +172,12 @@ def sync_to_bigquery(
             "method": "report",
             "token": TOKEN
         }
-        print("TOKEN")
+        print(API_LOCAL_URL)
+        print(PROJECT_ID)
+        print(DATASET_ID)
+        print(TABLE_ID)
         print(TOKEN)
+
         # Llamar a la API local
         print(f"Llamando a API local: {API_LOCAL_URL}")
         print(f"Headers: {headers}")
@@ -309,5 +313,6 @@ if __name__ == "__main__":
     # Para Cloud Run, usar puerto 8080
     port = int(os.getenv("PORT", 8080))
     uvicorn.run(app, host="0.0.0.0", port=port)
+
 
 
